@@ -1,16 +1,28 @@
 
+import { db } from '../db';
+import { chatMessagesTable } from '../db/schema';
 import { type CreateChatMessageInput, type ChatMessage } from '../schema';
 
-export async function createChatMessage(input: CreateChatMessageInput): Promise<ChatMessage> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is adding a new message to a chat session.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createChatMessage = async (input: CreateChatMessageInput): Promise<ChatMessage> => {
+  try {
+    // Insert chat message record
+    const result = await db.insert(chatMessagesTable)
+      .values({
         session_id: input.session_id,
         role: input.role,
         content: input.content,
-        metadata: input.metadata || null,
-        timestamp: new Date(),
-        processed_by_llm: false
-    } as ChatMessage);
-}
+        metadata: input.metadata || null
+      })
+      .returning()
+      .execute();
+
+    const message = result[0];
+    return {
+      ...message,
+      metadata: message.metadata as Record<string, any> | null
+    };
+  } catch (error) {
+    console.error('Chat message creation failed:', error);
+    throw error;
+  }
+};
